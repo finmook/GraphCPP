@@ -18,7 +18,7 @@ BEST_PARAMETERS = {
     'hidden_channels': 128,
     'layer_type': 'sageconv',
     'layers_pre_mp': 1,
-    'mp_layers': 2,
+    'mp_layers': 4,
     'layers_post_mp': 1,
     'learning_rate': 0.001,
     'pooling': 'mean',
