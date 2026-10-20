@@ -2,7 +2,7 @@ import torch
 from torch_geometric.loader import DataLoader
 from graphcpp.dataset import CPPDataset
 from graphcpp.model import GCN
-import lightning as L
+import pytorch_lightning as L
 from pytorch_lightning import LightningDataModule
 from config import *
 import torchmetrics
@@ -94,9 +94,6 @@ class GraphCPPDataModule(L.LightningDataModule):
         self.test_split = CPPDataset(root=folder, _split='test', fp_type=fp_type).shuffle()
         # self.mlcpp2_independent = CPPDataset(root=folder, _split='mlcpp2_independent', fp_type=fp_type).shuffle()
 
-        # print the test split
-        for i, data in enumerate(self.mlcpp2_independent):
-            print(f"{i}_{data['y'].item()}_{data['name']}")
 
     def train_dataloader(self):
         return DataLoader(self.train_split, batch_size=BATCH_SIZE, shuffle=True)
@@ -105,7 +102,7 @@ class GraphCPPDataModule(L.LightningDataModule):
         return DataLoader(self.val_split, batch_size=BATCH_SIZE)
 
     def test_dataloader(self):
-        return DataLoader(self.mlcpp2_independent, batch_size=BATCH_SIZE)
+        return DataLoader(self.test_split, batch_size=BATCH_SIZE)
 
 class GraphCPPModule(L.LightningModule):
     def __init__(self, learning_rate=0.001, weight_decay=None, **model_kwargs):
@@ -143,7 +140,7 @@ class GraphCPPModule(L.LightningModule):
             return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     def training_step(self, batch, batch_idx):
-        preds, labels = self(batch)
+        preds, labels, _ = self(batch)
         preds = preds.squeeze(1)
         labels = labels.float()
         loss = self.loss_module(preds, labels)
@@ -155,7 +152,7 @@ class GraphCPPModule(L.LightningModule):
         return loss
     
     def validation_step(self, batch, batch_idx):
-        preds, labels = self(batch)
+        preds, labels, _ = self(batch)
         preds = preds.squeeze(1)
         labels = labels.float()
         self.val_accuracy(preds, labels)
@@ -171,14 +168,14 @@ class GraphCPPModule(L.LightningModule):
         self.log('val_auc', self.val_auc, batch_size=len(batch))
 
     def test_step(self, batch, batch_idx):
-        preds, labels = self(batch)
+        preds, labels, _ = self(batch)
         # log as a file artifact the predictions and labels into mlflow
 
         preds = preds.squeeze(1)
         labels = labels.float()
 
         current_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        with open(f'.\comparison-predictions\{current_time}.csv', 'w') as f:
+        with open(f'comparison_predictions_{current_time}_{batch_idx}.csv', 'w') as f:
             preds_cpu = preds.cpu().detach().numpy()
             f.write('probability\n')
             for i in range(len(preds_cpu)):

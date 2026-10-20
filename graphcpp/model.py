@@ -193,10 +193,8 @@ class GATv2Conv(torch.nn.Module):
 class TransformerConv(torch.nn.Module):
     def __init__(self, dim_in, dim_out, bias=False, conv_dropout=0.0, n_heads=1, **kwargs):
         super(TransformerConv, self).__init__()
-        self.model = Sequential([
-            pyg.nn.TransformerConv(in_channels=dim_in, out_channels=dim_out, bias=bias, heads=n_heads, edge_dim=11, dropout=conv_dropout),
-            Linear(dim_in=dim_in*n_heads, dim_out=dim_out)
-        ])
+        # concat=False averages the heads, so the output stays dim_out (hidden_channels) for pooling and the head
+        self.model = pyg.nn.TransformerConv(in_channels=dim_in, out_channels=dim_out, heads=n_heads, concat=False, bias=bias, edge_dim=11, dropout=conv_dropout)
 
     def forward(self, batch):
         batch.x = self.model(batch.x, batch.edge_index, batch.edge_attr)
@@ -268,7 +266,7 @@ layer_dict = {
     'sageconv': SAGEConv,
     'gatconv': GATConv,
     'gatv2conv': GATv2Conv,
-    'transformerconv': GATv2Conv,
+    'transformerconv': TransformerConv,
     'generalconv': CustomGeneralConv,
     'generaledgeconv': GeneralEdgeConv,
     'generalsampleedgeconv': GeneralSampleEdgeConv,
