@@ -1,7 +1,15 @@
 import torch
 import torch.nn as nn
 from torch.nn import Parameter
-from torch_scatter import scatter_add
+try:
+    from torch_scatter import scatter_add
+except ImportError:
+    # torch-scatter needs a wheel built against the exact torch version, which is
+    # awkward on hosted runtimes. PyG ships an equivalent, so only fall back.
+    from torch_geometric.utils import scatter as _pyg_scatter
+
+    def scatter_add(src, index, dim=0, dim_size=None):
+        return _pyg_scatter(src, index, dim=dim, dim_size=dim_size, reduce='sum')
 
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.nn.inits import glorot, zeros

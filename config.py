@@ -23,7 +23,10 @@ BEST_PARAMETERS = {
     'learning_rate': 0.001,
     'pooling': 'mean',
     'stage_type': 'stack',
-    'weight_decay': 'cosine'
+    'weight_decay': 'cosine',
+    # None keeps the original unweighted BCE loss (balanced dataset). The merged
+    # dataset is imbalanced; prepare_merged_dataset.py prints the value to use.
+    'pos_weight': None
 }
 
 # Progress Report #3 architecture comparison.
@@ -37,8 +40,10 @@ EXPERIMENTS = {
     'graphcpp_transformer4': {'layer_type': 'transformerconv', 'mp_layers': 4, 'n_heads': 4},
 }
 
-def get_parameters(config_name=None):
+def get_parameters(config_name=None, pos_weight=None):
     params = dict(BEST_PARAMETERS)
     if config_name is not None:
         params.update(EXPERIMENTS[config_name])
+    if pos_weight is not None:
+        params['pos_weight'] = pos_weight
     return params

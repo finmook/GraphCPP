@@ -48,9 +48,11 @@ if __name__ == "__main__":
     # dataset path folder
     parser.add_argument('--dataset', type=str, help='Dataset folder', default='dataset')
     parser.add_argument('--config', type=str, choices=sorted(EXPERIMENTS), help='Named architecture from config.EXPERIMENTS (default: BEST_PARAMETERS)', default=None)
+    parser.add_argument('--pos_weight', type=float, help='BCE positive class weight for imbalanced training sets (see prepare_merged_dataset.py)', default=None)
+    parser.add_argument('--results_dir', type=str, help='Where to write the result json (use a separate dir per dataset)', default='results')
     args = parser.parse_args()
     experiment_name = args.experiment_name or args.config or f"{start_time}"
-    params = get_parameters(args.config)
+    params = get_parameters(args.config, pos_weight=args.pos_weight)
 
     L.seed_everything(args.seed)
     print(f"Seed: {args.seed}")
@@ -63,8 +65,8 @@ if __name__ == "__main__":
     print(f"Parameter count: {n_params}")
     print(f"Test MCC: {test_results['test_mcc']}")
 
-    os.makedirs('results', exist_ok=True)
-    with open(os.path.join('results', f'{experiment_name}.json'), 'w') as f:
+    os.makedirs(args.results_dir, exist_ok=True)
+    with open(os.path.join(args.results_dir, f'{experiment_name}.json'), 'w') as f:
         json.dump({
             'experiment_name': experiment_name,
             'config': args.config,

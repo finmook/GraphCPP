@@ -26,6 +26,7 @@ MODELS = [
     ('graphcpp_transformer2', 'TransformerConv-2'),
     ('graphcpp_transformer4', 'TransformerConv-4'),
 ]
+LABELS = dict(MODELS) | {'graphcpp_sage2': 'GraphSAGE-2'}
 REFERENCE = 'graphcpp_sage4'
 
 # Non-overlapping interpretation of the paper's adjacent bin labels (identical to PR2):
@@ -113,7 +114,13 @@ def length_metrics(result):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--results_dir', type=str, default='results')
+    parser.add_argument('--models', type=str, nargs='+', default=None,
+                        help='Experiment names to compare (default: the PR3 set). The first one is the paired-analysis reference.')
     args = parser.parse_args()
+
+    if args.models:
+        MODELS = [(name, LABELS.get(name, name)) for name in args.models]
+        REFERENCE = args.models[0]
 
     results_dir = Path(args.results_dir)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

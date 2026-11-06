@@ -105,7 +105,7 @@ class GraphCPPDataModule(L.LightningDataModule):
         return DataLoader(self.test_split, batch_size=BATCH_SIZE)
 
 class GraphCPPModule(L.LightningModule):
-    def __init__(self, learning_rate=0.001, weight_decay=None, **model_kwargs):
+    def __init__(self, learning_rate=0.001, weight_decay=None, pos_weight=None, **model_kwargs):
         super().__init__()
         self.save_hyperparameters()
 
@@ -113,7 +113,12 @@ class GraphCPPModule(L.LightningModule):
         self.weight_decay = weight_decay
         self.model = GCN(**model_kwargs)
 
-        self.loss_module = torch.nn.BCEWithLogitsLoss()
+        # pos_weight compensates for the class imbalance of the merged dataset.
+        # Training loss is weighted; val/test loss stays unweighted so it remains
+        # comparable across datasets with different balance.
+        train_pos_weight = None if pos_weight is None else torch.tensor(float(pos_weight))
+        self.loss_module = torch.nn.BCEWithLogitsLoss(pos_weight=train_pos_weight)
+        self.eval_loss_module = torch.nn.BCEWithLogitsLoss()
         self.train_accuracy = torchmetrics.Accuracy(task='binary')
         self.val_accuracy = torchmetrics.Accuracy(task='binary')
         self.val_mcc = torchmetrics.MatthewsCorrCoef(task='binary')
@@ -159,7 +164,7 @@ class GraphCPPModule(L.LightningModule):
         self.val_mcc(preds, labels)
         self.val_auc(preds, labels)
         # validation loss
-        loss = self.loss_module(preds, labels)
+        loss = self.eval_loss_module(preds, labels)
         print(f"Validation loss: {loss}")
         print(f"Validation MCC: {self.val_mcc.compute()}")
         self.log("val_loss", loss, batch_size=len(batch))
