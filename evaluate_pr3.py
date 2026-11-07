@@ -169,6 +169,10 @@ if __name__ == "__main__":
 
     # Task 10: paired same-peptide analysis against GraphSAGE-4
     paired_rows = []
+    # The reference is MODELS[0], which --models can change; label the columns with
+    # the actual reference rather than hardcoding SAGE-4, or the table misreports
+    # which model the comparison is against.
+    ref_label = LABELS.get(REFERENCE, REFERENCE)
     for name, label in MODELS:
         if name == REFERENCE:
             continue
@@ -177,10 +181,11 @@ if __name__ == "__main__":
             r, m = ref.loc[mask, "correct"], preds[name].loc[mask, "correct"]
             fixed, broken = int(((r == 0) & (m == 1)).sum()), int(((r == 1) & (m == 0)).sum())
             paired_rows.append({"Model": label, "Length range": bin_label, "N": int(mask.sum()),
-                                "SAGE-4 wrong -> new correct": fixed, "SAGE-4 correct -> new wrong": broken,
+                                f"{ref_label} wrong -> new correct": fixed,
+                                f"{ref_label} correct -> new wrong": broken,
                                 "Net corrected by new model": fixed - broken})
     paired = pd.DataFrame(paired_rows)
-    paired.to_csv(results_dir / "pr3_paired_vs_sage4.csv", index=False)
+    paired.to_csv(results_dir / f"pr3_paired_vs_{REFERENCE}.csv", index=False)
 
     pd.set_option("display.width", 250)
     pd.set_option("display.max_columns", 50)
@@ -188,6 +193,6 @@ if __name__ == "__main__":
     print(overall.drop(columns=["layer_type", "mp_layers"]).to_string(index=False, float_format="%.4f"))
     print("\nSAME LENGTH-RANGE COMPARISON (accuracy primary; MCC NaN = single-class bin)")
     print(comparison.to_string(index=False, float_format="%.4f"))
-    print("\nPAIRED SAME-PEPTIDE ANALYSIS vs GraphSAGE-4")
+    print(f"\nPAIRED SAME-PEPTIDE ANALYSIS vs {ref_label}")
     print(paired.to_string(index=False))
     print(f"\nSaved tables to {results_dir}/")
